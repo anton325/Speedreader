@@ -107,12 +107,22 @@ class Speedreader:
     
     def update_word(self):
         self.speed_label.configure(text = str(int(self.convertToWordsPerMinute(self.refresh_rate)))+" Words per minute")
-        self.word_label.configure(text=self.book[self.word_index])
+        thisWord = self.book[self.word_index]
+        self.word_label.configure(text=thisWord)
         if not self.pause:
             if self.word_index < self.total_words-3:
                 self.word_index += 1
-            self.progress_label.configure(text = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
-        self.main_frame.after(int(self.refresh_rate), self.update_word)
+            self.progress_label.configure(qtext = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
+        print(int(self.adjustTimeForWord(thisWord)))
+        self.main_frame.after(int(self.adjustTimeForWord(thisWord)), self.update_word)
+
+    def adjustTimeForWord(self,word):
+        base_word_length = 5
+        this_word_length = len(word)
+        if this_word_length<=base_word_length:
+            return self.refresh_rate
+        else:
+            return self.refresh_rate/((base_word_length+0.3*base_word_length)/this_word_length)
 
     def convertToRefreshRate(self,wordsperminute):
         return 60*1000/wordsperminute
