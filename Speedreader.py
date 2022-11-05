@@ -61,7 +61,6 @@ class Speedreader:
         self.start_percentage = self.user_input.get()
         # print(self.start_percentage)
         self.word_index = int(self.total_words*self.start_percentage/100)
-        print(self.word_index)
         self.set_main_frame()
 
     def set_main_frame(self):
