@@ -93,14 +93,20 @@ class Speedreader:
         self.number_of_words_button_up.grid(column=2,row=3,columnspan=1,pady = pady_controlbar_number_words)
         self.number_of_words_button_down.grid(column=0,row=3,columnspan=1,pady = pady_controlbar_number_words)
         
+
+        self.skip_by_entry = tk.Entry(self.main_frame,text ="400")
         self.skip_forward = tk.Button(self.main_frame,text=">>",command= self.skip_forwards)
         self.skip_back = tk.Button(self.main_frame,text="<<",command= self.skip_backwards)
+        self.skip_by_entry.grid(column=1,row=4,columnspan=1,pady = pady_controlbar_number_words)
         self.skip_forward.grid(column=2,row=4,columnspan=1,pady = pady_controlbar_number_words)
         self.skip_back.grid(column=0,row=4,columnspan=1,pady = pady_controlbar_number_words)
 
         self.pause_button = tk.Button(self.main_frame,text='Start',pady=0,command=self.pause_unpause)
         self.pause_button.grid(column=1,row=30)
         self.update_word()
+
+        self.master.bind("<space>", lambda x: self.pause_unpause())
+
         # launch window
         self.main_frame.mainloop()
 
@@ -133,13 +139,21 @@ class Speedreader:
             self.update_number_words()
     
     def skip_forwards(self):
-        self.word_index += 400
+        skip_by = self.skip_by_entry.get()
+        try:
+            self.word_index += skip_by
+        except:
+            pass
     
     def skip_backwards(self):
-        if self.word_index > 400:
-            self.word_index -= 400
-        else:
-            self.word_index = 0
+        skip_by = self.skip_by_entry.get()
+        try:
+            if self.word_index > skip_by:
+                self.word_index -= skip_by
+            else:
+                self.word_index = 0
+        except:
+            pass
         
 
     def update_word(self):
