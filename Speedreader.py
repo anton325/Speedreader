@@ -18,12 +18,13 @@ class Speedreader:
         self.book = input_book
         self.word_index = 0
         self.total_words = len(self.book)
+        self.show_number_of_words = 1
         # get root tk instance
         self.master = tk.Tk()
 
         # Set geometry
-        self.width = 500
-        self.height = 300
+        self.width = 800
+        self.height = 500
         geo = str(self.width) + "x" + str(self.height)
         self.master.geometry(geo)
 
@@ -69,22 +70,36 @@ class Speedreader:
         # frame management function for new frame:
         self.new_frame(self.main_frame)
 
-        self.word_label = tk.Label(self.main_frame,text="", font=("Arial", 40))
-        self.word_label.grid(column=0,row=0,columnspan=3,pady = 20)
-
+        self.word_label = tk.Label(self.main_frame,text="", font=("Arial", 30))
+        self.word_label.grid(column=1,row=0,columnspan=1,pady = 20)
+        self.main_frame.columnconfigure(1,minsize=700)
 
         self.progress_label = tk.Label(self.main_frame,text = "Progress: %.1f" % (100*self.myround(self.word_index/self.total_words,0.1))+"%")
         self.progress_label.grid(column=1,row=1)
 
-        pady_controlbar = (50,20)
+        pady_controlbar_speed = (50,20)
         self.speed_label = tk.Label(self.main_frame,text = "")
-        self.speed_label.grid(column=1,row=2,columnspan=1,pady = pady_controlbar)
+        self.speed_label.grid(column=1,row=2,columnspan=1,pady = pady_controlbar_speed)
         self.speed_up_button = tk.Button(self.main_frame,text="+",command= self.speedup)
         self.slow_down_button = tk.Button(self.main_frame,text="-",command= self.slowdown)
-        self.speed_up_button.grid(column=2,row=2,columnspan=1,pady = pady_controlbar)
-        self.slow_down_button.grid(column=0,row=2,columnspan=1,pady = pady_controlbar)
+        self.speed_up_button.grid(column=2,row=2,columnspan=1,pady = pady_controlbar_speed)
+        self.slow_down_button.grid(column=0,row=2,columnspan=1,pady = pady_controlbar_speed)
+
+        pady_controlbar_number_words = (10,20)
+        self.number_of_words_button_label = tk.Label(self.main_frame, text = "Number of words: 1")
+        self.number_of_words_button_label.grid(column=1,row=3,columnspan=1,pady = pady_controlbar_number_words)
+        self.number_of_words_button_up = tk.Button(self.main_frame,text="+",command= self.show_more_words)
+        self.number_of_words_button_down = tk.Button(self.main_frame,text="-",command= self.show_less_words)
+        self.number_of_words_button_up.grid(column=2,row=3,columnspan=1,pady = pady_controlbar_number_words)
+        self.number_of_words_button_down.grid(column=0,row=3,columnspan=1,pady = pady_controlbar_number_words)
+        
+        self.skip_forward = tk.Button(self.main_frame,text=">>",command= self.skip_forwards)
+        self.skip_back = tk.Button(self.main_frame,text="<<",command= self.skip_backwards)
+        self.skip_forward.grid(column=2,row=4,columnspan=1,pady = pady_controlbar_number_words)
+        self.skip_back.grid(column=0,row=4,columnspan=1,pady = pady_controlbar_number_words)
+
         self.pause_button = tk.Button(self.main_frame,text='Start',pady=0,command=self.pause_unpause)
-        self.pause_button.grid(column=1,row=3)
+        self.pause_button.grid(column=1,row=30)
         self.update_word()
         # launch window
         self.main_frame.mainloop()
@@ -105,19 +120,42 @@ class Speedreader:
     def slowdown(self):
         self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)-10)
     
+    def update_number_words(self):
+        self.number_of_words_button_label.configure(text = "Number of words: {}".format(self.show_number_of_words))
+
+    def show_more_words(self):
+        self.show_number_of_words += 1
+        self.update_number_words()
+
+    def show_less_words(self):
+        if self.show_number_of_words > 1:
+            self.show_number_of_words -= 1
+            self.update_number_words()
+    
+    def skip_forwards(self):
+        self.word_index += 400
+    
+    def skip_backwards(self):
+        if self.word_index > 400:
+            self.word_index -= 400
+        else:
+            self.word_index = 0
+        
+
     def update_word(self):
         self.speed_label.configure(text = str(int(self.convertToWordsPerMinute(self.refresh_rate)))+" Words per minute")
-        thisWord = self.book[self.word_index]
+        thisWord = self.book[self.word_index:self.word_index+self.show_number_of_words]
+        thisWord = " ".join(thisWord)
         self.word_label.configure(text=thisWord)
         if not self.pause:
-            if self.word_index < self.total_words-3:
-                self.word_index += 1
-            self.progress_label.configure(qtext = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
-        print(int(self.adjustTimeForWord(thisWord)))
+            if self.word_index < self.total_words-3-self.show_number_of_words:
+                self.word_index += self.show_number_of_words
+            self.progress_label.configure(text = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
+        # print(int(self.adjustTimeForWord(thisWord)))
         self.main_frame.after(int(self.adjustTimeForWord(thisWord)), self.update_word)
 
     def adjustTimeForWord(self,word):
-        base_word_length = 5
+        base_word_length = 5 * self.show_number_of_words
         this_word_length = len(word)
         if this_word_length<=base_word_length:
             return self.refresh_rate
@@ -147,7 +185,9 @@ class Speedreader:
     
 
 if __name__ == "__main__":
-    book = open_book('1_Artemis_Fowl_-_Eoin_Colfer.epub')
+    book = "Rule_of_Wolves_-_Leigh_Bardugo.epub"
+    # book = '1_Artemis_Fowl_-_Eoin_Colfer.epub'
+    book = open_book(book)
 
     lines = convert_epub_to_lines(book)
 
