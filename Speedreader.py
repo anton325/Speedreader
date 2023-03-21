@@ -20,7 +20,7 @@ class Speedreader:
     initializing a bunch of things
     """
     def __init__(self):
-        self.SAVE_STATE_EVERY_WORDS = 300
+        self.SAVE_STATE_EVERY_WORDS = 150
         self.show_number_of_words = 1
         # get root tk instance
         self.master = tk.Tk()
@@ -60,7 +60,7 @@ class Speedreader:
         self.buttons  = []
         r = 4
         for i in range(len(existing_books)):
-                self.buttons.append(tk.Button(self.frame.interior, text=str(existing_books[i]).split("/")[-1],command = lambda: self.load_existing_book(existing_books[i])))
+                self.buttons.append(tk.Button(self.frame.interior, text=str(existing_books[i]).split("/")[-1],command = lambda x = existing_books[i]: self.load_existing_book(x)))
                 self.buttons[-1].grid(column = 0, row = r)
                 r+=1
         self.title_frame.mainloop()
@@ -156,7 +156,7 @@ class Speedreader:
         self.pause_button.grid(column=1,row=30)
         self.update_word()
 
-        self.main_menu_button = tk.Button(self.main_frame,text="Main menu",command = self.set_title_frame).grid(column = 1,row = 31)
+        self.main_menu_button = tk.Button(self.main_frame,text="Main menu",command = self.set_title_frame).grid(column = 1,row = 31,pady=20)
 
         # keybindings
         self.master.bind("<space>", lambda x: self.pause_unpause())
