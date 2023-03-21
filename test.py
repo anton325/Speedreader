@@ -1,20 +1,5 @@
-import tkinter as tk
+import pickle as pkl
 
-root = tk.Tk()
-root.geometry("200x200")
-# create a label widget with some text
-label = tk.Label(root, text='Hello, World 12312312!')
-
-# pack the label widget to display it
-label.pack()
-
-# get the length of the text in the label
-text_length = len(label['text'])
-
-# set the anchor property based on the length of the text
-if text_length > 10:
-    label.config(anchor='w')
-else:
-    label.config(anchor='w')
-
-root.mainloop()
+with open("saved_books/Rule_of_Wolves_-_Leigh_Bardugo/word_index.pkl","rb") as f:
+    a = pkl.load(f)
+print(a)

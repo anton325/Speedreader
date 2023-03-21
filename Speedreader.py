@@ -1,23 +1,23 @@
 import regex as re
 from epub_conversion.utils import open_book, convert_epub_to_lines
 import tkinter as tk
-    
+import pathlib
+import tkinter.filedialog
+import pickle as pkl
+from Scrollable_frame import VerticalScrolledFrame
 class Speedreader:
 
     ####################################################################################################################################
     ##############################                     FRAME AND DISPLAY RELATED FUNCTIONS                ##############################
     ####################################################################################################################################
-
-
+    
 
     """
     __init__
     initializing a bunch of things
     """
-    def __init__(self,input_book):
-        self.book = input_book
-        self.word_index = 0
-        self.total_words = len(self.book)
+    def __init__(self):
+        self.SAVE_STATE_EVERY_WORDS = 300
         self.show_number_of_words = 1
         # get root tk instance
         self.master = tk.Tk()
@@ -28,11 +28,10 @@ class Speedreader:
         geo = str(self.width) + "x" + str(self.height)
         self.master.geometry(geo)
 
+        # start as pause
         self.pause = True
+        # this refresh rate is 350 words/minute
         self.refresh_rate = float(171)
-
-        # Stop it from changing size
-        # self.master.resizable(width=0, height=0)
 
         # how to react when closing the window
         self.master.protocol("WM_DELETE_WINDOW", self.quit_app)
@@ -41,15 +40,65 @@ class Speedreader:
         self.master.title("Read")
         self.current_frame = None
         
-        # rollout mode
-        # start with the first main frame
-        self.set_start_frame()
+        # start with the first frame
+        self.set_title_frame()
+
+    def set_title_frame(self):
+        self.title_frame = tk.Frame(self.master)
+        self.new_frame(self.title_frame)
+        self.title_frame_label = tk.Label(self.title_frame,text = "Load a new book or continue reading").grid(column = 0,row = 0)
+        self.new_book_button = tk.Button(self.title_frame,text = "Select new book", command=self.select_file).grid(column=0,row=1)
+        tk.Label(self.title_frame,text="Your library: ").grid(column=0,row=2)
+        self.frame = VerticalScrolledFrame(self.title_frame)
+        self.frame.grid(column = 0,row = 3)
+
+        # for each bookin library create button with which we can load and continue reading
+        existing_books = self.read_library()
+        self.buttons  = []
+        r = 4
+        for i in range(len(existing_books)):
+                self.buttons.append(tk.Button(self.frame.interior, text=str(existing_books[i]).split("/")[-1],command = lambda: self.load_existing_book(existing_books[i])))
+                self.buttons[-1].grid(column = 0, row = r)
+                r+=1
+        self.title_frame.mainloop()
+
+    def read_library(self):
+        dir = pathlib.Path("saved_books")
+        return [f for f in dir.iterdir() if f.is_dir()]
+
+    def load_existing_book(self,title):
+        self.path_to_saved = pathlib.Path(title)
+        with open(self.path_to_saved / "book.pkl","rb") as f:
+            self.book = pkl.load(f)
+        try:
+            with open(self.path_to_saved / "word_index.pkl","rb") as f:
+                self.word_index = pkl.load(f)
+        except:
+            self.word_index = 0
+        self.total_words = len(self.book)
+        self.set_main_frame()
+
+    """
+    select_file
+    window to select appropriate google response sheet
+    runs ride assign algorithm on loaded information
+    """
+    def select_file(self):
+        filetypes=(("Epub files", "*.epub"),("all files","*.*"))
+        filename = tkinter.filedialog.askopenfilename(
+            title='Open a file',
+            initialdir='/',
+            filetypes=filetypes)
+        self.open_and_read_new_book(filename)
 
     def set_start_frame(self):
         # get frame
         self.start_frame = tk.Frame(self.master)
         # frame management function for new frame:
         self.new_frame(self.start_frame)
+
+        self.word_index = 0
+        self.total_words = len(self.book)
 
         self.question_label = tk.Label(self.start_frame,text = "At what percentage do you want to start ?").grid(column=0,row=0)
         self.user_input = tk.DoubleVar(self.start_frame)
@@ -60,7 +109,6 @@ class Speedreader:
     
     def start_reading(self):
         self.start_percentage = self.user_input.get()
-        # print(self.start_percentage)
         self.word_index = int(self.total_words*self.start_percentage/100)
         self.set_main_frame()
 
@@ -105,7 +153,12 @@ class Speedreader:
         self.pause_button.grid(column=1,row=30)
         self.update_word()
 
+        self.main_menu_button = tk.Button(self.main_frame,text="Main menu",command = self.set_title_frame).grid(column = 1,row = 31)
+
+        # keybindings
         self.master.bind("<space>", lambda x: self.pause_unpause())
+        self.master.bind('<Left>', lambda x: self.slowdown())
+        self.master.bind('<Right>', lambda x: self.speedup())
 
         # launch window
         self.main_frame.mainloop()
@@ -123,8 +176,10 @@ class Speedreader:
         
     def speedup(self):
         self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)+10)
+
     def slowdown(self):
-        self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)-10)
+        if self.convertToWordsPerMinute(self.refresh_rate)-10 > 50:
+            self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)-10)
     
     def update_number_words(self):
         self.number_of_words_button_label.configure(text = "Number of words: {}".format(self.show_number_of_words))
@@ -141,15 +196,15 @@ class Speedreader:
     def skip_forwards(self):
         skip_by = self.skip_by_entry.get()
         try:
-            self.word_index += skip_by
+            self.word_index += int(skip_by)
         except:
             pass
     
     def skip_backwards(self):
         skip_by = self.skip_by_entry.get()
         try:
-            if self.word_index > skip_by:
-                self.word_index -= skip_by
+            if self.word_index > int(skip_by):
+                self.word_index -= int(skip_by)
             else:
                 self.word_index = 0
         except:
@@ -165,13 +220,18 @@ class Speedreader:
             if self.word_index < self.total_words-3-self.show_number_of_words:
                 self.word_index += self.show_number_of_words
             self.progress_label.configure(text = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
-        # print(int(self.adjustTimeForWord(thisWord)))
+            if self.word_index % self.SAVE_STATE_EVERY_WORDS == 0:
+                self.save_progress(self.word_index)
         self.main_frame.after(int(self.adjustTimeForWord(thisWord)), self.update_word)
 
+    def save_progress(self,word_index):
+        with open(self.path_to_saved / "word_index.pkl","wb") as f:
+            pkl.dump(word_index,f)
+
     def adjustTimeForWord(self,word):
-        base_word_length = 5 * self.show_number_of_words
+        base_word_length = 4 * self.show_number_of_words
         this_word_length = len(word)
-        if this_word_length<=base_word_length:
+        if this_word_length <= base_word_length:
             return self.refresh_rate
         else:
             return self.refresh_rate/((base_word_length+0.3*base_word_length)/this_word_length)
@@ -196,27 +256,39 @@ class Speedreader:
     def quit_app(self):
         # print("Programm beendet")
         self.master.destroy()
+
+    def open_and_read_new_book(self,filename):
+        book = open_book(filename)
+
+        lines = convert_epub_to_lines(book)
+
+        self.book = []
+
+        for l in lines:
+            # process the lines
+            l = (re.sub("<.*?>", "",l))
+            l = re.sub('(?:\\[rn\]|[\r\n]+)+',"",l)
+            l = re.sub('  ','',l)
+            l = re.sub('/[“]/g', "",l)
+            l = a = l.strip('\“')
+            l = a = l.strip('\”')
+            if l != '':
+                # print(repr(l))
+                for word in l.split():
+                    self.book.append(word)
+        self.create_folder_and_save_book(filename)
+        self.set_start_frame()
     
+    def create_folder_and_save_book(self,filename):
+        print(filename)
+        book_title = filename.split("/")[-1].split(".")[0]
+        print(book_title)
+        self.path_to_saved = pathlib.Path("saved_books",book_title)
+        self.path_to_saved.mkdir(parents=True, exist_ok=True)
+        p = self.path_to_saved / "book.pkl"
+        with open(p, "wb") as output_file:
+            pkl.dump(self.book, output_file)
+
 
 if __name__ == "__main__":
-    book = "Rule_of_Wolves_-_Leigh_Bardugo.epub"
-    # book = '1_Artemis_Fowl_-_Eoin_Colfer.epub'
-    book = open_book(book)
-
-    lines = convert_epub_to_lines(book)
-
-    book_processed = []
-
-    for l in lines:
-        # process the lines
-        l = (re.sub("<.*?>", "",l))
-        l = re.sub('(?:\\[rn\]|[\r\n]+)+',"",l)
-        l = re.sub('  ','',l)
-        l = re.sub('/[“]/g', "",l)
-        l = a = l.strip('\“')
-        l = a = l.strip('\”')
-        if l != '':
-            # print(repr(l))
-            for word in l.split():
-                book_processed.append(word)
-    sr = Speedreader(book_processed)
+    sr = Speedreader()
