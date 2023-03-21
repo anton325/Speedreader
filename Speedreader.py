@@ -5,6 +5,9 @@ import pathlib
 import tkinter.filedialog
 import pickle as pkl
 from Scrollable_frame import VerticalScrolledFrame
+import shutil
+
+
 class Speedreader:
 
     ####################################################################################################################################
@@ -280,14 +283,13 @@ class Speedreader:
         self.set_start_frame()
     
     def create_folder_and_save_book(self,filename):
-        print(filename)
         book_title = filename.split("/")[-1].split(".")[0]
-        print(book_title)
         self.path_to_saved = pathlib.Path("saved_books",book_title)
         self.path_to_saved.mkdir(parents=True, exist_ok=True)
         p = self.path_to_saved / "book.pkl"
         with open(p, "wb") as output_file:
             pkl.dump(self.book, output_file)
+        shutil.copy(filename,self.path_to_saved)
 
 
 if __name__ == "__main__":
