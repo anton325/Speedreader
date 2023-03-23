@@ -12,7 +12,7 @@ for x in range(15):
         r_rate.append(refresh_rate)
         print(refresh_rate)
     else:
-        n = refresh_rate *  np.sqrt(this_word_length-base_word_length-1)/4 + refresh_rate
+        n = refresh_rate *  np.sqrt(this_word_length-base_word_length-1)/1 + refresh_rate
         r_rate.append(n)
         print(n)
 plt.plot(lengs,r_rate)

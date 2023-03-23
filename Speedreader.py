@@ -122,7 +122,7 @@ class Speedreader:
         # frame management function for new frame:
         self.new_frame(self.main_frame)
 
-        self.word_label = tk.Label(self.main_frame,text="", font=("Arial", 30))
+        self.word_label = tk.Label(self.main_frame,text="", font=("Arial", 35))
         self.word_label.grid(column=1,row=0,columnspan=1,pady = 20)
         self.main_frame.columnconfigure(1,minsize=700)
 
@@ -137,9 +137,9 @@ class Speedreader:
         self.speed_up_button.grid(column=2,row=2,columnspan=1,pady = pady_controlbar_speed)
         self.slow_down_button.grid(column=0,row=2,columnspan=1,pady = pady_controlbar_speed)
         pady_controlbar_number_words = (10,20)
-        self.remaining_time_label = tk.Label(self.main_frame,
-                                              text="Remaining time: {} min".format(self.calculate_remaining_time()))
+        self.remaining_time_label = tk.Label(self.main_frame,text="")
         self.remaining_time_label.grid(column = 1,row = 3)
+        self.update_remaining_time()
         
         self.number_of_words_button_label = tk.Label(self.main_frame, text = "Number of words: 1")
         self.number_of_words_button_label.grid(column=1,row=4,columnspan=1,pady = pady_controlbar_number_words)
@@ -183,10 +183,12 @@ class Speedreader:
         
     def speedup(self):
         self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)+10)
+        self.update_remaining_time()
 
     def slowdown(self):
         if self.convertToWordsPerMinute(self.refresh_rate)-10 > 50:
             self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)-10)
+            self.update_remaining_time()
     
     def update_number_words(self):
         self.number_of_words_button_label.configure(text = "Number of words: {}".format(self.show_number_of_words))
@@ -218,10 +220,10 @@ class Speedreader:
             pass
         
 
-    def calculate_remaining_time(self):
+    def update_remaining_time(self):
         words_left = len(self.book)-self.word_index
         words_per_minute = self.convertToWordsPerMinute(self.refresh_rate)
-        return int(words_left/words_per_minute)
+        self.remaining_time_label.configure(text="Remaining time: {} min".format(int(words_left/words_per_minute)))
 
 
     def update_word(self):
@@ -235,7 +237,7 @@ class Speedreader:
             self.progress_label.configure(text = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
             if self.word_index % self.SAVE_STATE_EVERY_WORDS == 0:
                 self.save_progress(self.word_index)
-            self.remaining_time_label.configure(text="Remaining time: {} min".format(self.calculate_remaining_time()))
+            self.update_remaining_time()
         self.main_frame.after(int(self.adjustTimeForWord(thisWord)), self.update_word)
 
     def save_progress(self,word_index):
@@ -248,8 +250,8 @@ class Speedreader:
         if this_word_length <= base_word_length:
             return self.refresh_rate
         else:
-            # return self.refresh_rate/((base_word_length+0.2*base_word_length)/this_word_length)
-            return self.refresh_rate *  np.sqrt(this_word_length-base_word_length-1)/3 + self.refresh_rate
+            return self.refresh_rate/((base_word_length+0.2*base_word_length)/this_word_length)
+            # return self.refresh_rate *  np.sqrt(this_word_length-base_word_length-1)/2 + self.refresh_rate
 
     def convertToRefreshRate(self,wordsperminute):
         return 60*1000/wordsperminute
