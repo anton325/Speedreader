@@ -6,6 +6,7 @@ import tkinter.filedialog
 import pickle as pkl
 from Scrollable_frame import VerticalScrolledFrame
 import shutil
+import numpy as np
 
 
 class Speedreader:
@@ -20,7 +21,7 @@ class Speedreader:
     initializing a bunch of things
     """
     def __init__(self):
-        self.SAVE_STATE_EVERY_WORDS = 150
+        self.SAVE_STATE_EVERY_WORDS = 100
         self.show_number_of_words = 1
         # get root tk instance
         self.master = tk.Tk()
@@ -135,22 +136,25 @@ class Speedreader:
         self.slow_down_button = tk.Button(self.main_frame,text="-",command= self.slowdown)
         self.speed_up_button.grid(column=2,row=2,columnspan=1,pady = pady_controlbar_speed)
         self.slow_down_button.grid(column=0,row=2,columnspan=1,pady = pady_controlbar_speed)
-
         pady_controlbar_number_words = (10,20)
+        self.remaining_time_label = tk.Label(self.main_frame,
+                                              text="Remaining time: {} min".format(self.calculate_remaining_time()))
+        self.remaining_time_label.grid(column = 1,row = 3)
+        
         self.number_of_words_button_label = tk.Label(self.main_frame, text = "Number of words: 1")
-        self.number_of_words_button_label.grid(column=1,row=3,columnspan=1,pady = pady_controlbar_number_words)
+        self.number_of_words_button_label.grid(column=1,row=4,columnspan=1,pady = pady_controlbar_number_words)
         self.number_of_words_button_up = tk.Button(self.main_frame,text="+",command= self.show_more_words)
         self.number_of_words_button_down = tk.Button(self.main_frame,text="-",command= self.show_less_words)
-        self.number_of_words_button_up.grid(column=2,row=3,columnspan=1,pady = pady_controlbar_number_words)
-        self.number_of_words_button_down.grid(column=0,row=3,columnspan=1,pady = pady_controlbar_number_words)
+        self.number_of_words_button_up.grid(column=2,row=4,columnspan=1,pady = pady_controlbar_number_words)
+        self.number_of_words_button_down.grid(column=0,row=4,columnspan=1,pady = pady_controlbar_number_words)
         
 
         self.skip_by_entry = tk.Entry(self.main_frame,text ="400")
         self.skip_forward = tk.Button(self.main_frame,text=">>",command= self.skip_forwards)
         self.skip_back = tk.Button(self.main_frame,text="<<",command= self.skip_backwards)
-        self.skip_by_entry.grid(column=1,row=4,columnspan=1,pady = pady_controlbar_number_words)
-        self.skip_forward.grid(column=2,row=4,columnspan=1,pady = pady_controlbar_number_words)
-        self.skip_back.grid(column=0,row=4,columnspan=1,pady = pady_controlbar_number_words)
+        self.skip_by_entry.grid(column=1,row=5,columnspan=1,pady = pady_controlbar_number_words)
+        self.skip_forward.grid(column=2,row=5,columnspan=1,pady = pady_controlbar_number_words)
+        self.skip_back.grid(column=0,row=5,columnspan=1,pady = pady_controlbar_number_words)
 
         self.pause_button = tk.Button(self.main_frame,text='Start',pady=0,command=self.pause_unpause)
         self.pause_button.grid(column=1,row=30)
@@ -214,6 +218,12 @@ class Speedreader:
             pass
         
 
+    def calculate_remaining_time(self):
+        words_left = len(self.book)-self.word_index
+        words_per_minute = self.convertToWordsPerMinute(self.refresh_rate)
+        return int(words_left/words_per_minute)
+
+
     def update_word(self):
         self.speed_label.configure(text = str(int(self.convertToWordsPerMinute(self.refresh_rate)))+" Words per minute")
         thisWord = self.book[self.word_index:self.word_index+self.show_number_of_words]
@@ -225,6 +235,7 @@ class Speedreader:
             self.progress_label.configure(text = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
             if self.word_index % self.SAVE_STATE_EVERY_WORDS == 0:
                 self.save_progress(self.word_index)
+            self.remaining_time_label.configure(text="Remaining time: {} min".format(self.calculate_remaining_time()))
         self.main_frame.after(int(self.adjustTimeForWord(thisWord)), self.update_word)
 
     def save_progress(self,word_index):
@@ -237,7 +248,8 @@ class Speedreader:
         if this_word_length <= base_word_length:
             return self.refresh_rate
         else:
-            return self.refresh_rate/((base_word_length+0.3*base_word_length)/this_word_length)
+            # return self.refresh_rate/((base_word_length+0.2*base_word_length)/this_word_length)
+            return self.refresh_rate *  np.sqrt(this_word_length-base_word_length-1)/3 + self.refresh_rate
 
     def convertToRefreshRate(self,wordsperminute):
         return 60*1000/wordsperminute
