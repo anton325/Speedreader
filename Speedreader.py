@@ -7,6 +7,7 @@ import pickle as pkl
 from Scrollable_frame import VerticalScrolledFrame
 import shutil
 import numpy as np
+import time
 
 
 class Speedreader:
@@ -31,8 +32,6 @@ class Speedreader:
         geo = str(self.width) + "x" + str(self.height)
         self.master.geometry(geo)
 
-        # start as pause
-        self.pause = True
         # this refresh rate is 350 words/minute
         self.refresh_rate = float(171)
 
@@ -79,7 +78,24 @@ class Speedreader:
         except:
             self.word_index = 0
         self.total_words = len(self.book)
-        self.set_main_frame()
+        self.show_statistics_frame()
+
+    def show_statistics_frame(self):
+        self.stats_frame = tk.Frame(self.master)
+        self.new_frame(self.stats_frame)
+        # set time in reading session to 0
+        self.time_spent_reading_book = 0
+        try:
+            with open(self.path_to_saved / "reading_time.pkl","rb") as f:
+                self.time_spent_reading_book = pkl.load(f)
+        except:
+            pass
+        tk.Label(self.stats_frame,text="Showing the statistics for the book {}".format(str(self.path_to_saved).split("/")[1])).grid(column=0,row=0)
+        tk.Label(self.stats_frame,text="Time read: {} min".format(round(self.time_spent_reading_book,2))).grid(column=0,row=1)
+        tk.Label(self.stats_frame,text="Percent read {}%".format(round(self.word_index/len(self.book),2))).grid(column=0,row=2)
+
+        start_reading_button = tk.Button(self.stats_frame,text="Continue reading",command=self.set_main_frame)
+        start_reading_button.grid(column=0,row=100)
 
     """
     select_file
@@ -121,6 +137,11 @@ class Speedreader:
         # frame management function for new frame:
         self.new_frame(self.main_frame)
 
+        # start as pause
+        self.pause = True
+
+        self.time_runs = False
+
         self.word_label = tk.Label(self.main_frame,text="", font=("Arial", 35))
         self.word_label.grid(column=1,row=0,columnspan=1,pady = 20)
         self.main_frame.columnconfigure(1,minsize=700)
@@ -155,11 +176,11 @@ class Speedreader:
         self.skip_forward.grid(column=2,row=5,columnspan=1,pady = pady_controlbar_number_words)
         self.skip_back.grid(column=0,row=5,columnspan=1,pady = pady_controlbar_number_words)
 
-        self.pause_button = tk.Button(self.main_frame,text='Start',pady=0,command=self.pause_unpause)
+        self.pause_button = tk.Button(self.main_frame,text='Continue',pady=0,command=self.pause_unpause)
         self.pause_button.grid(column=1,row=30)
         self.update_word()
 
-        self.main_menu_button = tk.Button(self.main_frame,text="Main menu",command = self.set_title_frame).grid(column = 1,row = 31,pady=20)
+        self.main_menu_button = tk.Button(self.main_frame,text="Main menu",command = self.stop_reading_return_title_frame).grid(column = 1,row = 31,pady=20)
 
         # keybindings
         self.master.bind("<space>", lambda x: self.pause_unpause())
@@ -168,6 +189,16 @@ class Speedreader:
 
         # launch window
         self.main_frame.mainloop()
+    
+    def stop_reading_return_title_frame(self):
+        if self.time_runs:
+            # print("called save progress time in stop and return")
+            self.save_progress_time()
+        # else:
+            # print("did not call save progress time in stop and return")
+        self.save_progress(self.word_index)
+        self.set_title_frame()
+
 
     def myround(self,x, base=0.5):
         return base * round(x/base)
@@ -176,9 +207,11 @@ class Speedreader:
         if self.pause:
             self.pause = False
             self.pause_button.configure(text = "Pause")
+            self.continue_time()
         else:
             self.pause = True
             self.pause_button.configure(text = "Continue")
+            self.pause_time()
         
     def speedup(self):
         self.refresh_rate = self.convertToRefreshRate(self.convertToWordsPerMinute(self.refresh_rate)+10)
@@ -217,7 +250,6 @@ class Speedreader:
                 self.word_index = 0
         except:
             pass
-        
 
     def update_remaining_time(self):
         words_left = len(self.book)-self.word_index
@@ -230,18 +262,30 @@ class Speedreader:
         thisWord = self.book[self.word_index:self.word_index+self.show_number_of_words]
         thisWord = " ".join(thisWord)
         self.word_label.configure(text=thisWord)
+        # print(self.time_spent_reading_book)
         if not self.pause:
             if self.word_index < self.total_words-3-self.show_number_of_words:
                 self.word_index += self.show_number_of_words
             self.progress_label.configure(text = "Progress: %.1f" % (self.myround(100*self.word_index/self.total_words,0.1))+"%")
             if self.word_index % self.SAVE_STATE_EVERY_WORDS == 0:
                 self.save_progress(self.word_index)
+                # print("called save progress time in update word")
+                self.save_progress_time()
             self.update_remaining_time()
         self.main_frame.after(int(self.adjustTimeForWord(thisWord)), self.update_word)
 
     def save_progress(self,word_index):
         with open(self.path_to_saved / "word_index.pkl","wb") as f:
             pkl.dump(word_index,f)
+
+    def save_progress_time(self):
+        if self.time_runs:
+            time_spend_in_book = self.get_updated_read_time()
+        else:
+            time_spend_in_book = self.time_spent_reading_book
+        with open(self.path_to_saved / "reading_time.pkl","wb") as f:
+            # print("wrote {} to file".format(time_spend_in_book))
+            pkl.dump(time_spend_in_book,f)
 
     def adjustTimeForWord(self,word):
         base_word_length = 4 * self.show_number_of_words
@@ -258,8 +302,21 @@ class Speedreader:
     def convertToWordsPerMinute(self,refresh_rate):
         return 60*1000/refresh_rate
 
-
+    def pause_time(self):
+        self.time_runs = False
+        self.time_spent_reading_book = self.get_updated_read_time()
+        self.save_progress_time()
     
+    def get_updated_read_time(self):
+        stop_reading_time = time.time()
+        elapsed_time = stop_reading_time - self.start_reading_time
+        elapsed_mins = elapsed_time/60
+        return self.time_spent_reading_book + elapsed_mins
+
+    def continue_time(self):
+        self.time_runs = True
+        self.start_reading_time = time.time()
+
     def new_frame(self,new):
         # destroy old frame (if any)
         if not (self.current_frame is None):
@@ -271,6 +328,12 @@ class Speedreader:
 
     def quit_app(self):
         # print("Programm beendet")
+        try:
+            if self.time_runs:
+                # print("called save progress time in quit app")
+                self.save_progress_time()
+        except:
+            pass
         self.master.destroy()
 
     def open_and_read_new_book(self,filename):
