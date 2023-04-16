@@ -342,7 +342,6 @@ class Speedreader:
         lines = convert_epub_to_lines(book)
 
         self.book = []
-
         for l in lines:
             # process the lines
             l = (re.sub("<.*?>", "",l))
@@ -356,6 +355,7 @@ class Speedreader:
                 for word in l.split():
                     self.book.append(word)
         self.create_folder_and_save_book(filename)
+        self.time_spent_reading_book = 0
         self.set_start_frame()
     
     def create_folder_and_save_book(self,filename):
