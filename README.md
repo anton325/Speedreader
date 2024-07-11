@@ -10,7 +10,7 @@ One of the core features of SpeedReader is its ability to display single words i
 
 ### **Dynamic Speed Control**
 
-Understanding that every reader has their own comfort level and reading capability, SpeedReader offers dynamic speed control. This feature allows users to adjust the speed at which words are displayed in real time. Whether you're looking to breeze through a novel or spend a little extra time on denser material, SpeedReader makes it easy to change speeds on the fly without interrupting the reading experience.
+Understanding that every reader has their own comfort level and reading capability, SpeedReader offers dynamic speed control. Just use the arrow keys on your keyboard to adjust the speed at which words are displayed in real time. Whether you're looking to breeze through a novel or spend a little extra time on denser material, SpeedReader makes it easy to change speeds on the fly without interrupting the reading experience.
 
 ### **Predictive Time Remaining Estimation**
 
@@ -25,7 +25,7 @@ To get started with SpeedReader, follow these steps in your terminal:
 git clone https://github.com/anton325/speedreader.git
 
 # Navigate to the project directory
-cd speedreader
+cd Speedreader
 
 # Install the required Python packages
 pip install -r requirements.txt

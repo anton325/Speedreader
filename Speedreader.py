@@ -6,7 +6,6 @@ import tkinter.filedialog
 import pickle as pkl
 from Scrollable_frame import VerticalScrolledFrame
 import shutil
-import numpy as np
 import time
 
 
@@ -66,6 +65,7 @@ class Speedreader:
 
     def read_library(self):
         dir = pathlib.Path("saved_books")
+        dir.mkdir(parents=True, exist_ok=True)
         return [f for f in dir.iterdir() if f.is_dir()]
 
     def load_existing_book(self,title):
