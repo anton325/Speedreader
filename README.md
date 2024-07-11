@@ -29,10 +29,13 @@ cd Speedreader
 
 # Install the required Python packages
 pip install -r requirements.txt
+
+# Run the main
+python Speedreader.py
 ```
 ## Usage
 
-To use SpeedReader, simply load your EPUB file through the user interface, and adjust the speed using the provided controls. The software will display words one at a time at your chosen speed.
+To use SpeedReader, simply load your EPUB file through the user interface, and adjust the speed using the provided controls. The software will display words one at a time at your chosen speed. You can try this by loading the free EPUB file of Pride and Prejudice in books/
 
 ## Screenshots
 
