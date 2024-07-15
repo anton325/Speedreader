@@ -43,7 +43,7 @@ To use SpeedReader, simply load your EPUB file through the user interface, and a
 ![Main Menu](images/title_screen.png "Main Menu of SpeedReader")
 
 ### Reading Screen
-![Reading Screen](images/read.png "Reading Screen in SpeedReader")
+![Reading Screen](images/Speedreader.gif "Reading Screen in SpeedReader")
 
 ## Contributing
 
